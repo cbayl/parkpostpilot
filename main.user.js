@@ -9,8 +9,8 @@
 // @match        https://club.6parkbbs.com/know1/index.php?app=forum&act=postnew*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_addStyle
-// @downloadURL  https://github.com/cbaly/parkpostpilot/main/main.user.js
-// @updateURL    https://github.com/cbaly/parkpostpilot/main/main.user.js
+// @downloadURL  https://github.com/cbayl/parkpostpilot/raw/main/main.user.js
+// @updateURL    https://github.com/cbayl/parkpostpilot/raw/main/main.user.js
 
 
 // ==/UserScript==
