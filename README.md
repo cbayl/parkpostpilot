@@ -38,4 +38,4 @@ https://greasyfork.org/zh-CN/scripts/485852-%E4%B8%AA%E4%BA%BA%E5%B7%A5%E5%85%B7
 - github:
 https://github.com/cbayl/parkpostpilot/
 - github脚本地址：
-https://github.com/cbaly/parkpostpilot/main/main.user.js
+https://github.com/cbayl/parkpostpilot/raw/main/main.user.js
