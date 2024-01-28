@@ -31,6 +31,7 @@
 - 内置一套自己的 UBB 代码，方便让某些内容以更加独特的风格显示，比如： `[code][/code]` 代码
 `[quote][/quote]` 引用
 
+## 代码：
 代码我已经分享到下面的地址，目前正在探索中，并不是已经可以用的，有兴趣的朋友可以看看。欢迎大家发表自己的想法建议，或者是一起开发。
 - greasyfork:
 https://greasyfork.org/zh-CN/scripts/485852-%E4%B8%AA%E4%BA%BA%E5%B7%A5%E5%85%B7-%E7%95%99%E5%9B%AD%E5%8F%91%E5%B8%96%E5%B0%8F%E5%8A%A9%E6%89%8B
@@ -38,10 +39,3 @@ https://greasyfork.org/zh-CN/scripts/485852-%E4%B8%AA%E4%BA%BA%E5%B7%A5%E5%85%B7
 https://github.com/cbayl/parkpostpilot/
 - github脚本地址：
 https://github.com/cbaly/parkpostpilot/main/main.user.js
-
-   - 不同的帖子制作不同风格的模板，根据风格，将发布的文字图片放入合适的背景
-- 内置一套自己的 UBB 代码，方便让某些内容以更加独特的风格显示，比如： `[code][/code]` 代码
-`[quote][/quote]` 引用
-
-代码我已经分享到下面的地址，目前正在探索中，并不是已经可以用的，有兴趣的朋友可以看看。欢迎大家发表自己的想法建议，或者是一起开发。
-https://greasyfork.org/zh-CN/scripts/485852-%E4%B8%AA%E4%BA%BA%E5%B7%A5%E5%85%B7-%E7%95%99%E5%9B%AD%E5%8F%91%E5%B8%96%E5%B0%8F%E5%8A%A9%E6%89%8B
