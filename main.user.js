@@ -1,31 +1,51 @@
 // ==UserScript==
-// @name         个人工具-留园发帖小助手
-// @namespace    http://www.6park.com/
-// @version      0.11
-// @description  留园发帖小助手,让发帖更简单更好看，目前尚在开发中。
-// @author       lyabc@6park
+// @name         ParkPostPilot
+// @name:zh      留园发帖小助手
+// @name:zh-CN   留园发帖小助手
+// @name:zh-HK   留園發帖小助手
+// @name:zh-SG   留园发帖小助手
+// @name:zh-TW   留園發帖小助手
+// @namespace    https://github.com/cbayl/ParkPostPilot
+// @version      0.12
+// @description  This tool makes posting on 6park forums more convenient, simple, and aesthetically pleasing.
+// @description:zh  此工具可以讓妳在留園的發帖更加方便簡單好看。
+// @description:zh-CN  此工具可以让你在留园的发帖更加方便简单好看。
+// @description:zh-HK  此工具可以讓妳在留園的發帖更加方便簡單好看。
+// @description:zh-SG  此工具可以让你在留园的发帖更加方便简单好看。
+// @description:zh-TW  此工具可以讓妳在留園的發帖更加方便簡單好看。
+// @author       lyabcv@gmail.com
 // @license      MIT
 // @match        https://web.6parkbbs.com/index.php?app=forum&act=post&bbsid*
 // @match        https://club.6parkbbs.com/*/index.php?app=forum&act=postnew*
+// @match        https://club.6parkbbs.com/*/index.php?app=forum&act=postnew*
+// @match        https://www.cool18.com/site/index.php?app=forum&act=post&bbsid*
+// @match        https://www.cool18.com/*/index.php?app=forum&act=postnew&fid=1
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @grant        GM_setValue
+// @grant        GM_getValue
 // @grant        GM_addStyle
 // @downloadURL  https://github.com/cbayl/parkpostpilot/raw/main/main.user.js
 // @updateURL    https://github.com/cbayl/parkpostpilot/raw/main/main.user.js
-
 
 // ==/UserScript==
 
 (function() {
     'use strict';
-    const TITLE_LENGTH=60
-    const REPLACE_LINE_WITH_BR=false
-    const AUTO_SUBMIT=false
-    const CONVERT_TO_SIMPLIZED_CHINESE =true
+    console.log("留园发帖小助手")
+
+    const TITLE_LENGTH=60;
+    const REPLACE_LINE_WITH_BR=false;
+    const REPLACE_FILTERED_TAG=true;
+    const AUTO_SUBMIT=false;
+    const CONVERT_TO_SIMPLIZED_CHINESE =true;
+    const IF_ADD_TITLE_PREFIX = true;
+    const IF_CHECK_UNCLOSED_TAG = false;//检查是否有未关闭的<>
+    const IF_BEAUTIFY_CODE = true;//对帖子进行美化
     const USER_DEFINED_POST_TYPE_SETTINGS = [
         ["【新闻】", "", "", "", "新闻"],
         ["【软件】", "", "", "", "软件"],
         ["", "img", "lyabc", "", "图文"],
-        ["【教程】", "", "lyabc", "编程技术", "教程"]
+        ["【教程】", "", "lyabc", "编程技术", "教程"],
         // 可以添加更多规则
         // 第一项是标题内关键字
         // 第二项是内容关键字
@@ -33,6 +53,25 @@
         // 第四项是论坛名
         // 第五项是帖子类型
     ];
+    const USER_DEFINED_TITLE_PREFIX_SETTINGS = [
+        ["电脑", "", "lyabc", "电脑前线", "💻"],
+        ["[求助]", "", "lyabc", "电脑前线", "🙋‍♂️"],
+        ["【分享】", "", "lyabc", "电脑前线", "🔁"],
+        ["【讨论】", "", "lyabc", "电脑前线", "💬"],
+        // 可以添加更多规则
+        // 第一项是标题内关键字
+        // 第二项是内容关键字
+        // 第三项是用户名
+        // 第四项是论坛名
+        // 第五项prefix,可以是emoji,也可以是其它的内容
+    ];
+    //     // 从本地存储加载用户自定义规则，如果没有则使用默认规则
+    //     const defaultUserDefinedPostTypeSettings = GM_getValue('userDefinedPostTypeSettings', USER_DEFINED_POST_TYPE_SETTINGS);
+    //     // 在脚本更新时保存用户自定义规则
+    //     GM_setValue('userDefinedPostTypeSettings', defaultUserDefinedPostTypeSettings);
+
+    //     // 在这之后，你可以使用 USER_DEFINED_POST_TYPE_SETTINGS 来访问用户自定义规则
+    //     console.log(USER_DEFINED_POST_TYPE_SETTINGS);
 
     function determinePostType(title, content, username, forumName) {
 
@@ -48,20 +87,47 @@
                 return postType;
             }
         }
-
         return "-";// 默认类型，可以根据需求修改
     }
+    function determineTitlePrefix(title, content, username, forumName) {
 
+        for (const rule of USER_DEFINED_TITLE_PREFIX_SETTINGS) {
+            const [titleKeyword, contentKeyword, usernameKeyword, forumNameKeyword, titlePrefix] = rule;
 
-    console.log("留园发帖小助手")
+            if (
+                (titleKeyword === "" || title.includes(titleKeyword)) &&
+                (contentKeyword === "" || content.includes(contentKeyword)) &&
+                (usernameKeyword === "" || username === usernameKeyword) &&
+                (forumNameKeyword === "" || forumName === forumNameKeyword)
+            ) {
+                return titlePrefix;
+            }
+        }
+        return "";// 默认类型，可以根据需求修改
+    }
 
-    // 获取并填写内容
+    // 获取TextArea内容
     function getTextAreaContent() {
         //获得填写的内容
         const contentTextArea = document.querySelector('textarea[name="content"]');
         const textAreaContent = contentTextArea.value;
         return textAreaContent
 
+    }
+    // 获取Subject内容
+    function getSubjectContent() {
+        //获得填写的内容
+        const contentSubject = document.querySelector("#subject");
+        const textSubject= contentSubject.value;
+        return textSubject
+
+    }
+    // 获取Type内容
+    function getTypeContent() {
+        //获得填写的内容
+        const typeElement = document.querySelector("#myform > table > tbody > tr:nth-child(2) > td > select");
+        const textType= typeElement.value;
+        return textType
     }
 
     // Function to convert HTML code in the post
@@ -114,14 +180,12 @@
 
         if(match&&match[1].length==11){
             var videoId = match[1];
-
-            return `<embed src="https://www.youtube.com/v/${videoId}" type="application/x-shockwave-flash" width="480" height="320" allowfullscreen="true" style="margin:2px;">`;
+            return `<embed src="https://www.youtube.com/v/${videoId}"
+            type="application/x-shockwave-flash" width="480" height="320" allowfullscreen="true" style="margin:2px;">`;
         }
 
         return line;
     }
-
-
 
     // Function to convert Sendvid links to embedded codes
     function convertSendvidLinks(line) {
@@ -214,6 +278,7 @@
         const regex = /^[a-zA-Z\s]*$/;
         return regex.test(text);
     }
+
     function separateTitleAndContent(text) {
         const lines = text.trim().split("\n");
         if (lines.length > 1) {
@@ -239,8 +304,19 @@
             console.log(title);
             console.log(content);
             return { title, content };
+        } else if (lines.length = 1){
+            return { title: "", content: lines[0].trim() };
         }
         return { title: "", content: "" };
+    }
+    function replaceCodeAndBlockquotes(str) {
+        var res=""
+        // 替换<code>标签
+        res = str.replace(/<code>([\s\S]*?)<\/code>/g, '<div style="background-color:#f0f0f0"><span style="font-family: monospace; background-color: #f0f0f0; padding: 0px;">$1</span></div>');
+
+        // 替换<blockquote>标签
+        res = res.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, '<span style="border-left: 2px solid #999; margin: 0; padding-left: 10px; font-size: 0.8em;">$1</span>');
+        return res
     }
 
 
@@ -257,8 +333,8 @@
             typeSelect = document.querySelector("#myform > table > tbody > tr:nth-child(2) > td > select");
         }
         //帖子来源
-        var originInput_Original=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=radio]:nth-child(2)")
-        var originInput_Else=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=radio]:nth-child(3)")
+        var originInputOriginal=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=radio]:nth-child(2)")
+        var originInputElse=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=radio]:nth-child(3)")
 
         if (titleInput) {
             titleInput.value = postTitle;
@@ -268,7 +344,10 @@
         }
 
         if (contentTextArea) {
-            contentTextArea.value = postContent;
+            // contentTextArea.value = postContent;
+            // 使用document.execCommand来更新textarea的内容
+            contentTextArea.select();
+            document.execCommand('insertText', false, postContent);
 
         } else{
             //出错了
@@ -279,25 +358,24 @@
             typeSelect.value = postType;
         }
         if(postOrigin){
-            if(originInput_Original){
-                originInput_Original.checked = true
+            if(originInputOriginal){
+                originInputOriginal.checked = true
             }else{
                 //出错了
                 console.log("无法选择原创")
             }
         } else{
-            if(originInput_Else){
-                originInput_Else.checked = true
+            if(originInputElse){
+                originInputElse.checked = true
             }else{
                 //出错了
                 console.log("无法选择其他")
-
             }
         }
     }
 
     //自动提交
-    function AutoSubmit(){
+    function autoSubmit(){
         var submit_button=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=submit]:nth-child(2)")
         if(submit_button==null){
             submit_button=document.querySelector("#myform > table > tbody > tr:nth-child(5) > td > input[type=submit]:nth-child(1)")
@@ -320,7 +398,6 @@
     }
     function extractForumName() {
         const forumElement = document.querySelector("body > table > tbody > tr > td > p > font > b > font");
-
         if (forumElement) {
             // 使用正则表达式提取论坛名字
             var forumContent = forumElement.textContent.trim();
@@ -367,43 +444,192 @@
     }
 
 
-
-
-    function AidAction(){
-        // 确定当前用户
-        const user = extractUserName();
-
-        //确定当前论坛
-        const forum=extractForumName();
-
-        //获得填写的内容
-        const textAreaContent= getTextAreaContent();
-
-
-
-
-        //分离标题跟内容
-        var {title,content}= separateTitleAndContent(textAreaContent);
-        //繁简转换
-        if(CONVERT_TO_SIMPLIZED_CHINESE) content=Simplized(content);
-
-        //         //修改标题
-        //         title=modTitle(user,title)
-
-        //智能转化为html代码
-        content=convertHTMLCode(textAreaContent)
-
-        if(REPLACE_LINE_WITH_BR) content=replaceNewlinesWithBR(content);
-        //填写帖子
-        //选择帖子类型
-        var postType = determinePostType(title,content,user,forum);
-        var isOriginal=false;
-        fillForm(title, postType,content,isOriginal);
-        return true;
-
+    function determineIfOriginal(textTypeContent){
+        if((textTypeContent) && (textTypeContent.includes("原创"))) return true;
+        return false;
     }
 
+    function aidAction() {
+        try {
+            // 确定当前用户
+            const user = extractUserName();
+            // 确定当前论坛
+            const forum = extractForumName();
+            // 获取填写的内容
+            const textAreaContent = getTextAreaContent();
+            // 获取标题的内容
+            const textSubjectContent = getSubjectContent();
+            // 获取类型的内容
+            const textTypeContent = getTypeContent();
 
+            let title = "";
+            let content = "";
+
+            if (textSubjectContent === "") {
+                if (textAreaContent !== "") {
+                    // 分离标题跟内容
+                    const sepResult = separateTitleAndContent(textAreaContent);
+                    title = sepResult.title;
+                    content = sepResult.content;
+                } else {
+                    console.error("标题和内容均为空");
+                    return false; // 在出错情况下提前返回
+                }
+            } else {
+                title = textSubjectContent;
+                content = textAreaContent;
+            }
+
+            // 繁简转换
+            if (content && CONVERT_TO_SIMPLIZED_CHINESE && content !== "") {
+                content = Simplized(content);
+            }
+
+            if (textSubjectContent === ""&&IF_ADD_TITLE_PREFIX) {
+                // 修改标题
+                // title = determineTitlePrefix(user, forum, title)+title;
+                title = determineTitlePrefix(title, content, user, forum)+title;
+            }
+
+            // 智能转化为 HTML 代码
+            const convertedContent = convertHTMLCode(content);
+            content = REPLACE_LINE_WITH_BR ? replaceNewlinesWithBR(convertedContent) : convertedContent;
+            content = REPLACE_FILTERED_TAG ? replaceCodeAndBlockquotes(content) : content;
+
+            // 填写帖子
+            // 选择帖子类型
+            let postType = "";
+            if (textTypeContent === "" ||textTypeContent === "未知") {
+                postType = determinePostType(title, content, user, forum);
+            } else {
+                postType = textTypeContent;
+            }
+
+            // 帖子是否原创
+            let isOriginal = determineIfOriginal(textTypeContent);
+            fillForm(title, postType, content, isOriginal);
+            return true;
+        } catch (error) {
+            console.error("An error occurred:", error);
+            return false;
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        // 获取textarea元素
+        const textarea = document.querySelector('textarea');
+
+        // 检查是否有选中的文本
+        if (textarea && textarea.selectionStart !== undefined) {
+            // 获取选中文本的开始和结束位置
+            var selectionStart = textarea.selectionStart;
+            var selectionEnd = textarea.selectionEnd;
+            // 获取选中的文本
+            var selectedText = textarea.value.substring(selectionStart, selectionEnd);
+
+            // 排除选中文本末尾的换行符
+            if (selectedText.endsWith('\n')) {
+                selectionEnd--;
+                textarea.setSelectionRange(selectionStart, selectionEnd)
+                // 重新获取选中的文本
+                selectedText = textarea.value.substring(selectionStart, selectionEnd);
+            }
+
+            // 处理不同的快捷键
+            switch (true) {
+                case e.ctrlKey && (e.key === '1' || e.key === 'End'): // 'End' key for numeric keypad 1
+                    e.preventDefault();
+                    wrapText('<h1>', '</h1>');
+                    break;
+                case e.ctrlKey && (e.key === '2' || e.key === 'Down'): // 'Down' key for numeric keypad 2
+                    e.preventDefault();
+                    wrapText('<h2>', '</h2>');
+                    break;
+                case e.ctrlKey && (e.key === '3' || e.key === 'PageDown'): // 'PageDown' key for numeric keypad 3
+                    e.preventDefault();
+                    wrapText('<h3>', '</h3>');
+                    break;
+                case e.ctrlKey && (e.key === '4' || e.key === 'Left'): // 'Left' key for numeric keypad 4
+                    e.preventDefault();
+                    wrapText('<h4>', '</h4>');
+                    break;
+                case e.ctrlKey && (e.key === '5' || e.key === 'Right'): // 'Right' key for numeric keypad 5
+                    e.preventDefault();
+                    wrapText('<h5>', '</h5>');
+                    break;
+                case e.ctrlKey && e.key === 'i':
+                    e.preventDefault();
+                    wrapText('<i>', '</i>');
+                    break;
+                case e.ctrlKey && e.key === 'u':
+                    e.preventDefault();
+                    wrapText('<u>', '</u>');
+                    break;
+                case e.ctrlKey && e.key === 'b':
+                    e.preventDefault();
+                    wrapText('<b>', '</b>');
+                    break;
+                case e.ctrlKey && e.key === 'k':
+                    e.preventDefault();
+                    wrapText('<code>', '</code>');
+                    break;
+                case e.ctrlKey && e.key === 'q':
+                    e.preventDefault();
+                    wrapText('<blockquote>', '</blockquote>');
+                    break;
+                case e.ctrlKey && e.key === 'z':
+                    e.preventDefault();
+                    undo();
+                    break;
+                case e.ctrlKey && e.key === 'y':
+                    e.preventDefault();
+                    redo();
+                    break;
+            }
+        }
+
+        //         function wrapText(startTag, endTag) {
+        //             // 包裹文本
+        //             var wrappedText = startTag + selectedText + endTag;
+
+        //             // 创建一个input事件
+        //             var inputEvent = new InputEvent('input', {
+        //                 inputType: 'insertText',
+        //                 data: wrappedText,
+        //                 bubbles: true,
+        //                 cancelable: true
+        //             });
+
+        //             // 插入文本
+        //             textarea.setRangeText(wrappedText, selectionStart, selectionEnd, 'end');
+
+        //             // 触发input事件
+        //             textarea.dispatchEvent(inputEvent);
+
+        //             // 将焦点设置回textarea
+        //             textarea.focus();
+        //         }
+        function wrapText(startTag, endTag) {
+            // 包裹文本
+            var wrappedText = startTag + selectedText + endTag;
+
+            // 使用document.execCommand来更新textarea的内容
+            document.execCommand('insertText', false, wrappedText);
+
+            // 将焦点设置回textarea
+            textarea.focus();
+        }
+        // 撤销
+        // document.execCommand 似乎要被deprecated?
+        function undo() {
+            document.execCommand('undo', false, null);
+        }
+
+        // 重做
+        function redo() {
+            document.execCommand('redo', false, null);
+        }
+    });
 
     //切换到html代码
     const html_button=document.querySelector("#toolbar-content > div.toolbar > a.tool_html")
@@ -421,12 +647,10 @@
         );
         //Button click function
         function ButtonClickAction (zEvent) {
-            var res=AidAction();
-            if(AUTO_SUBMIT) AutoSubmit();
-
-
-
+            var res=aidAction();
+            if(AUTO_SUBMIT) autoSubmit();
         }}
+
     //Button style
     GM_addStyle ( `
     #myContainerPostAid{
