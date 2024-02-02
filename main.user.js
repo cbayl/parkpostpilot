@@ -139,7 +139,7 @@
             // Check if the line is HTML code
             if (!isHTMLCode(line)) {
                 // Check for YouTube links and convert
-                if (line.startsWith("https://www.youtu")||line.startsWith("https://youtu.be")) {
+                if (line.startsWith("https://www.youtu")||line.startsWith("https://youtu.be")||line.startsWith("https://youtube.com")) {
                     line = convertYouTubeLinks(line);
                 }
                 // Check for Sendvidlinks and convert
@@ -180,8 +180,7 @@
 
         if(match&&match[1].length==11){
             var videoId = match[1];
-            return `<embed src="https://www.youtube.com/v/${videoId}"
-            type="application/x-shockwave-flash" width="480" height="320" allowfullscreen="true" style="margin:2px;">`;
+            return `<embed src="https://www.youtube.com/v/${videoId} "type="application/x-shockwave-flash" width="480" height="320" allowfullscreen="true" style="margin:2px;">`;
         }
 
         return line;
